@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Login - Crime Reporting System</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="auth-container">
+
+        <!-- LEFT SIDE IMAGE -->
+
+        <div class="auth-image">
+
+            <img src="{{ url_for('static', filename='crime.jpg') }}"
+                 alt="Crime Reporting">
+
+        </div>
+
+
+        <!-- RIGHT SIDE LOGIN FORM -->
+
+        <div class="form-container">
+
+            <h2>Crime Reporting System</h2>
+
+            <h3>Login</h3>
+
+            {% if error %}
+
+            <p class="error">
+                {{ error }}
+            </p>
+
+            {% endif %}
+
+            <form method="POST">
+
+                <label>Email</label>
+
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    required
+                >
+
+                <label>Password</label>
+
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                >
+
+                <button type="submit">
+                    Login
+                </button>
+
+            </form>
+
+            <p>
+                Don't have an account?
+                <a href="/register">Register here</a>
+            </p>
+
+            <a href="/" class="back">
+                ← Back to Home
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

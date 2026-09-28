@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Crime Reporting System - Register</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="auth-container">
+
+        <!-- LEFT SIDE IMAGE -->
+        <div class="auth-image">
+
+           <img src="static/crime.jpeg" alt="">
+
+        </div>
+
+
+        <!-- RIGHT SIDE REGISTER FORM -->
+        <div class="form-container">
+
+            <h2>Crime Reporting System</h2>
+
+            <h3>Create Account</h3>
+
+
+            {% if error %}
+
+                <p class="error">
+                    {{ error }}
+                </p>
+
+            {% endif %}
+
+
+            <form method="POST">
+
+                <label>Name</label>
+
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter your name"
+                    required>
+
+
+                <label>Email</label>
+
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    required>
+
+
+                <label>Password</label>
+
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Create a password"
+                    required>
+
+
+                <label>Select Role</label>
+
+                <select name="role" required>
+
+                    <option value="">
+                        Select your role
+                    </option>
+
+                    <option value="Citizen">
+                        Citizen
+                    </option>
+
+                    <option value="Police">
+                        Police
+                    </option>
+
+                    <option value="Admin">
+                        Admin
+                    </option>
+
+                </select>
+
+
+                <button type="submit">
+                    Register
+                </button>
+
+            </form>
+
+
+            <p>
+                Already have an account?
+
+                <a href="/login">
+                    Login here
+                </a>
+            </p>
+
+
+            <a href="/" class="back">
+                ← Back to Home
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

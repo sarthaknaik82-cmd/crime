@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Crime Analytics</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <h2>Crime Reporting System - Analytics</h2>
+
+    <a href="{{ url_for('logout') }}"
+       class="logout-button">
+        Logout
+    </a>
+
+</header>
+
+
+<div class="dashboard-page">
+
+    <h1>Crime Analytics</h1>
+
+
+    <div class="dashboard-container">
+
+
+        <div class="dashboard-card">
+
+            <h2>Total Complaints</h2>
+
+            <h1>
+                {{ total_complaints }}
+            </h1>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h2>Submitted</h2>
+
+            <h1>
+                {{ submitted }}
+            </h1>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h2>Under Investigation</h2>
+
+            <h1>
+                {{ investigation }}
+            </h1>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h2>Resolved</h2>
+
+            <h1>
+                {{ resolved }}
+            </h1>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h2>Closed</h2>
+
+            <h1>
+                {{ closed }}
+            </h1>
+
+        </div>
+
+
+    </div>
+
+
+    <br>
+
+    <a href="{{ url_for('admin_dashboard') }}">
+        ← Back to Admin Dashboard
+    </a>
+
+</div>
+
+</body>
+
+</html>

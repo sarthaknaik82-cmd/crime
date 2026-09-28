@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>My Complaints</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<div class="form-container">
+
+
+    <h2>My Complaints</h2>
+
+
+    {% if complaints %}
+
+
+        {% for complaint in complaints %}
+
+
+            <div class="complaint-box">
+
+
+                <h3>
+
+                    Complaint ID:
+                    {{ complaint["complaint_id"] }}
+
+                </h3>
+
+
+                <p>
+
+                    <strong>Crime Type:</strong>
+
+                    {{ complaint["crime_type"] }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>Incident Date:</strong>
+
+                    {{ complaint["incident_date"] }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>Location:</strong>
+
+                    {{ complaint["location"] }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>Description:</strong>
+
+                    {{ complaint["description"] }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>Status:</strong>
+
+                    {{ complaint["status"] }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>Submitted On:</strong>
+
+                    {{ complaint["created_at"] }}
+
+                </p>
+
+
+            </div>
+
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <p>
+            You have not submitted any complaints yet.
+        </p>
+
+
+    {% endif %}
+
+
+    <br>
+
+
+    <a href="{{ url_for('citizen_dashboard') }}">
+
+        ← Back to Dashboard
+
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

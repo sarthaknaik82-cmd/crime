@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Update Complaint</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="form-container">
+
+    <h2>Update Complaint</h2>
+
+    <p>
+        <strong>Complaint ID:</strong>
+        {{ complaint["complaint_id"] }}
+    </p>
+
+    <p>
+        <strong>Crime Type:</strong>
+        {{ complaint["crime_type"] }}
+    </p>
+
+    <p>
+        <strong>Location:</strong>
+        {{ complaint["location"] }}
+    </p>
+
+    <hr>
+
+    <form method="POST">
+
+        <label>Update Status</label>
+
+        <select name="status" required>
+
+            <option value="Submitted"
+                {% if complaint["status"] == "Submitted" %}
+                selected
+                {% endif %}>
+                Submitted
+            </option>
+
+            <option value="Under Investigation"
+                {% if complaint["status"] == "Under Investigation" %}
+                selected
+                {% endif %}>
+                Under Investigation
+            </option>
+
+            <option value="Resolved"
+                {% if complaint["status"] == "Resolved" %}
+                selected
+                {% endif %}>
+                Resolved
+            </option>
+
+            <option value="Closed"
+                {% if complaint["status"] == "Closed" %}
+                selected
+                {% endif %}>
+                Closed
+            </option>
+
+        </select>
+
+        <button type="submit">
+            Update Status
+        </button>
+
+    </form>
+
+    <br>
+
+    <a href="{{ url_for('police_complaints') }}">
+        ← Back to Complaints
+    </a>
+
+</div>
+
+</body>
+
+</html>

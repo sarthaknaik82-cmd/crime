@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Track Complaint</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<div class="form-container">
+
+
+    <h2>Track Complaint</h2>
+
+
+    <form method="POST">
+
+
+        <label>
+            Enter Complaint ID
+        </label>
+
+
+        <input
+            type="text"
+            name="complaint_id"
+            placeholder="Example: CR0001"
+            required>
+
+
+        <button type="submit">
+
+            Track Complaint
+
+        </button>
+
+
+    </form>
+
+
+    {% if error %}
+
+        <p class="error">
+
+            {{ error }}
+
+        </p>
+
+    {% endif %}
+
+
+    {% if complaint %}
+
+
+        <hr>
+
+
+        <h3>
+            Complaint Details
+        </h3>
+
+
+        <p>
+
+            <strong>Complaint ID:</strong>
+
+            {{ complaint["complaint_id"] }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Crime Type:</strong>
+
+            {{ complaint["crime_type"] }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Incident Date:</strong>
+
+            {{ complaint["incident_date"] }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Location:</strong>
+
+            {{ complaint["location"] }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Description:</strong>
+
+            {{ complaint["description"] }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Status:</strong>
+
+            {{ complaint["status"] }}
+
+        </p>
+
+
+    {% endif %}
+
+
+    <br>
+
+
+    <a href="{{ url_for('citizen_dashboard') }}">
+
+        ← Back to Dashboard
+
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

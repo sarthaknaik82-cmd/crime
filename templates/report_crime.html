@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Report Crime</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<div class="form-container">
+
+
+    <h2>Report a Crime</h2>
+
+
+    {% if success %}
+
+        <p class="success">
+            {{ success }}
+        </p>
+
+    {% endif %}
+
+
+    <form method="POST">
+
+
+        <label>Crime Type</label>
+
+        <select name="crime_type" required>
+
+            <option value="">
+                Select Crime Type
+            </option>
+
+            <option value="Theft">
+                Theft
+            </option>
+
+            <option value="Robbery">
+                Robbery
+            </option>
+
+            <option value="Fraud">
+                Fraud
+            </option>
+
+            <option value="Cyber Crime">
+                Cyber Crime
+            </option>
+
+            <option value="Assault">
+                Assault
+            </option>
+
+            <option value="Missing Person">
+                Missing Person
+            </option>
+
+            <option value="Other">
+                Other
+            </option>
+
+        </select>
+
+
+        <label>Incident Date</label>
+
+        <input type="date"
+               name="incident_date"
+               required>
+
+
+        <label>Location of Incident</label>
+
+        <input type="text"
+               name="location"
+               placeholder="Enter incident location"
+               required>
+
+
+        <label>Description</label>
+
+        <textarea
+            name="description"
+            rows="6"
+            placeholder="Describe the incident"
+            required>
+        </textarea>
+
+
+        <button type="submit">
+
+            Submit Complaint
+
+        </button>
+
+
+    </form>
+
+
+    <br>
+
+
+    <a href="{{ url_for('citizen_dashboard') }}">
+
+        ← Back to Dashboard
+
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

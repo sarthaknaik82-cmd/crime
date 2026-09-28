@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Notifications</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<div class="form-container">
+
+
+    <h2>Notifications</h2>
+
+
+    {% if notifications %}
+
+
+        {% for notification in notifications %}
+
+
+            <div class="complaint-box">
+
+
+                <p>
+
+                    {{ notification["message"] }}
+
+                </p>
+
+
+                <small>
+
+                    {{ notification["created_at"] }}
+
+                </small>
+
+
+            </div>
+
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <p>
+            No notifications available.
+        </p>
+
+
+    {% endif %}
+
+
+    <br>
+
+
+    <a href="{{ url_for('citizen_dashboard') }}">
+
+        ← Back to Dashboard
+
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Police - Complaints</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header>
+
+    <h2>Crime Reporting System</h2>
+
+    <a href="{{ url_for('logout') }}" class="logout-button">
+        Logout
+    </a>
+
+</header>
+
+<div class="dashboard-page">
+
+    <h1>Crime Complaints</h1>
+
+    {% if complaints %}
+
+        {% for complaint in complaints %}
+
+        <div class="complaint-box">
+
+            <h3>
+                Complaint ID:
+                {{ complaint["complaint_id"] }}
+            </h3>
+
+            <p>
+                <strong>Citizen:</strong>
+                {{ complaint["citizen_name"] }}
+            </p>
+
+            <p>
+                <strong>Crime Type:</strong>
+                {{ complaint["crime_type"] }}
+            </p>
+
+            <p>
+                <strong>Incident Date:</strong>
+                {{ complaint["incident_date"] }}
+            </p>
+
+            <p>
+                <strong>Location:</strong>
+                {{ complaint["location"] }}
+            </p>
+
+            <p>
+                <strong>Description:</strong>
+                {{ complaint["description"] }}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                {{ complaint["status"] }}
+            </p>
+
+            <a href="{{ url_for('update_complaint',
+                                complaint_id=complaint['complaint_id']) }}"
+               class="dashboard-button">
+
+                Update Status
+
+            </a>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No complaints have been submitted.</p>
+
+    {% endif %}
+
+    <br>
+
+    <a href="{{ url_for('police_dashboard') }}">
+        ← Back to Police Dashboard
+    </a>
+
+</div>
+
+</body>
+
+</html>

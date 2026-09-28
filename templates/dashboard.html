@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+    <nav>
+
+        <h2>Crime Reporting System</h2>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+    </nav>
+
+
+    <div class="dashboard">
+
+        <h1>Welcome, {{ name }}</h1>
+
+        <h3>
+            Role: {{ role }}
+        </h3>
+
+
+        {% if role == "Citizen" %}
+
+        <div class="card">
+
+            <h2>Citizen Dashboard</h2>
+
+            <p>Report a crime</p>
+
+            <button>
+                Report Crime
+            </button>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>Track Complaint</h2>
+
+            <p>
+                Track your registered complaints.
+            </p>
+
+            <button>
+                Track Complaint
+            </button>
+
+        </div>
+
+
+        {% elif role == "Police" %}
+
+        <div class="card">
+
+            <h2>Police Officer Dashboard</h2>
+
+            <p>
+                View and manage assigned cases.
+            </p>
+
+            <button>
+                View Cases
+            </button>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>Update Case</h2>
+
+            <p>
+                Update investigation status.
+            </p>
+
+            <button>
+                Update Case
+            </button>
+
+        </div>
+
+
+        {% elif role == "Admin" %}
+
+        <div class="card">
+
+            <h2>Admin Dashboard</h2>
+
+            <p>
+                Manage users and system information.
+            </p>
+
+            <button>
+                Manage Users
+            </button>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>Reports</h2>
+
+            <p>
+                View crime reports and statistics.
+            </p>
+
+            <button>
+                View Reports
+            </button>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>
