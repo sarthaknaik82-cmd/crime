@@ -1,65 +1,81 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 
 <head>
 
-    <title>Login - Crime Reporting System</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Crime Reporting System - Login</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
 </head>
 
+
 <body>
 
     <div class="auth-container">
 
         <!-- LEFT SIDE IMAGE -->
-
         <div class="auth-image">
 
-            <img src="{{ url_for('static', filename='crime.jpg') }}"
-                 alt="Crime Reporting">
+            <img src="{{ url_for('static', filename='crime.jpeg') }}"
+                 alt="Crime Reporting System">
 
         </div>
 
 
         <!-- RIGHT SIDE LOGIN FORM -->
-
         <div class="form-container">
 
             <h2>Crime Reporting System</h2>
 
             <h3>Login</h3>
 
+
+            <!-- ERROR MESSAGE -->
+
             {% if error %}
 
-            <p class="error">
-                {{ error }}
-            </p>
+                <p class="error">
+                    {{ error }}
+                </p>
 
             {% endif %}
 
+
+            <!-- LOGIN FORM -->
+
             <form method="POST">
 
-                <label>Email</label>
+                <label for="email">
+                    Email
+                </label>
 
                 <input
                     type="email"
+                    id="email"
                     name="email"
                     placeholder="Enter your email"
                     required
                 >
 
-                <label>Password</label>
+
+                <label for="password">
+                    Password
+                </label>
 
                 <input
                     type="password"
+                    id="password"
                     name="password"
                     placeholder="Enter your password"
                     required
                 >
+
 
                 <button type="submit">
                     Login
@@ -67,12 +83,21 @@
 
             </form>
 
+
+            <!-- REGISTER LINK -->
+
             <p>
                 Don't have an account?
-                <a href="/register">Register here</a>
+
+                <a href="{{ url_for('register') }}">
+                    Register here
+                </a>
             </p>
 
-            <a href="/" class="back">
+
+            <!-- BACK TO HOME -->
+
+            <a href="{{ url_for('index') }}" class="back">
                 ← Back to Home
             </a>
 

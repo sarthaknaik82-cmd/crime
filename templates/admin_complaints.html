@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Admin - Crime Reports</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f2f5f9;
+            color: #222;
+        }
+
+        header {
+            background-color: #1f4e8c;
+            color: white;
+            padding: 20px 40px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h2 {
+            margin: 0;
+        }
+
+        .logout-button {
+            background-color: #d62828;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .page {
+            padding: 40px;
+        }
+
+        .page h1 {
+            color: #1f4e8c;
+        }
+
+        .complaint-box {
+            background-color: white;
+            margin-top: 20px;
+            padding: 25px;
+
+            border-radius: 10px;
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .complaint-box h2 {
+            color: #1f4e8c;
+        }
+
+        .complaint-box p {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .status {
+            display: inline-block;
+
+            padding: 8px 15px;
+
+            background-color: #e8f0ff;
+
+            color: #1f4e8c;
+
+            border-radius: 5px;
+
+            font-weight: bold;
+        }
+
+        .back-button {
+            display: inline-block;
+
+            margin-top: 25px;
+
+            background-color: #1f4e8c;
+
+            color: white;
+
+            padding: 12px 20px;
+
+            text-decoration: none;
+
+            border-radius: 5px;
+        }
+
+        .no-complaints {
+            background-color: white;
+
+            padding: 25px;
+
+            border-radius: 10px;
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h2>Crime Reporting System - Admin</h2>
+
+    <a href="{{ url_for('logout') }}"
+       class="logout-button">
+
+        Logout
+
+    </a>
+
+</header>
+
+
+<div class="page">
+
+    <h1>All Crime Reports</h1>
+
+
+    {% if complaints %}
+
+
+        {% for complaint in complaints %}
+
+
+        <div class="complaint-box">
+
+            <h2>
+                Complaint ID:
+                {{ complaint["complaint_id"] }}
+            </h2>
+
+
+            <p>
+                <strong>Citizen Name:</strong>
+                {{ complaint["citizen_name"] }}
+            </p>
+
+
+            <p>
+                <strong>Citizen Email:</strong>
+                {{ complaint["citizen_email"] }}
+            </p>
+
+
+            <p>
+                <strong>Crime Type:</strong>
+                {{ complaint["crime_type"] }}
+            </p>
+
+
+            <p>
+                <strong>Incident Date:</strong>
+                {{ complaint["incident_date"] }}
+            </p>
+
+
+            <p>
+                <strong>Location:</strong>
+                {{ complaint["location"] }}
+            </p>
+
+
+            <p>
+                <strong>Description:</strong>
+                {{ complaint["description"] }}
+            </p>
+
+
+            <p>
+                <strong>Status:</strong>
+
+                <span class="status">
+                    {{ complaint["status"] }}
+                </span>
+
+            </p>
+
+
+            <p>
+                <strong>Submitted On:</strong>
+                {{ complaint["created_at"] }}
+            </p>
+
+
+        </div>
+
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <div class="no-complaints">
+
+            <h2>No Crime Reports Found</h2>
+
+            <p>
+                There are currently no complaints
+                registered in the system.
+            </p>
+
+        </div>
+
+
+    {% endif %}
+
+
+    <a href="{{ url_for('admin_dashboard') }}"
+       class="back-button">
+
+        ← Back to Admin Dashboard
+
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

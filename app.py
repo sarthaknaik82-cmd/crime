@@ -13,92 +13,106 @@ app.secret_key = "crime_reporting_system_secret_key"
 # ============================================================
 
 def get_db_connection():
-
     conn = sqlite3.connect("database.db")
-
     conn.row_factory = sqlite3.Row
-
     return conn
 
 
 # ============================================================
-# CREATE DATABASE TABLES
+# CREATE / UPDATE DATABASE
 # ============================================================
 
 def create_database():
 
     conn = get_db_connection()
 
+    # --------------------------------------------------------
     # USERS TABLE
+    # --------------------------------------------------------
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
-
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-
             name TEXT NOT NULL,
-
             email TEXT UNIQUE NOT NULL,
-
             password TEXT NOT NULL,
-
             role TEXT NOT NULL
-
         )
     """)
 
-
+    # --------------------------------------------------------
     # COMPLAINTS TABLE
+    # --------------------------------------------------------
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS complaints (
-
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-
             complaint_id TEXT UNIQUE NOT NULL,
-
             citizen_id INTEGER NOT NULL,
-
             crime_type TEXT NOT NULL,
-
             incident_date TEXT NOT NULL,
-
             location TEXT NOT NULL,
-
             description TEXT NOT NULL,
-
             status TEXT NOT NULL DEFAULT 'Submitted',
-
             created_at TEXT NOT NULL,
-
-            FOREIGN KEY (citizen_id)
-            REFERENCES users(id)
-
+            fir_registered INTEGER DEFAULT 0,
+            fir_number TEXT,
+            police_remark TEXT,
+            reviewed_at TEXT,
+            FOREIGN KEY(citizen_id) REFERENCES users(id)
         )
     """)
 
+    # --------------------------------------------------------
+    # ADD NEW COLUMNS IF OLD DATABASE ALREADY EXISTS
+    # --------------------------------------------------------
 
+    columns = conn.execute(
+        "PRAGMA table_info(complaints)"
+    ).fetchall()
+
+    existing_columns = [column["name"] for column in columns]
+
+    if "fir_registered" not in existing_columns:
+        conn.execute("""
+            ALTER TABLE complaints
+            ADD COLUMN fir_registered INTEGER DEFAULT 0
+        """)
+
+    if "fir_number" not in existing_columns:
+        conn.execute("""
+            ALTER TABLE complaints
+            ADD COLUMN fir_number TEXT
+        """)
+
+    if "police_remark" not in existing_columns:
+        conn.execute("""
+            ALTER TABLE complaints
+            ADD COLUMN police_remark TEXT
+        """)
+
+    if "reviewed_at" not in existing_columns:
+        conn.execute("""
+            ALTER TABLE complaints
+            ADD COLUMN reviewed_at TEXT
+        """)
+
+    # --------------------------------------------------------
     # NOTIFICATIONS TABLE
+    # --------------------------------------------------------
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS notifications (
-
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-
             user_id INTEGER NOT NULL,
-
             message TEXT NOT NULL,
-
             is_read INTEGER DEFAULT 0,
-
             created_at TEXT NOT NULL,
-
-            FOREIGN KEY (user_id)
-            REFERENCES users(id)
-
+            FOREIGN KEY(user_id) REFERENCES users(id)
         )
     """)
 
-
     conn.commit()
-
     conn.close()
 
 
@@ -108,7 +122,6 @@ def create_database():
 
 @app.route("/")
 def index():
-
     return render_template("index.html")
 
 
@@ -121,55 +134,47 @@ def register():
 
     if request.method == "POST":
 
-        name = request.form["name"]
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "")
 
-        email = request.form["email"]
-
-        password = request.form["password"]
-
-        role = request.form["role"]
-
+        if not name or not email or not password or not role:
+            return render_template(
+                "register.html",
+                error="Please fill all the fields."
+            )
 
         hashed_password = generate_password_hash(password)
 
-
         conn = get_db_connection()
-
 
         try:
 
             conn.execute("""
                 INSERT INTO users
                 (name, email, password, role)
-
                 VALUES (?, ?, ?, ?)
-            """,
-            (
+            """, (
                 name,
                 email,
                 hashed_password,
                 role
             ))
 
-
             conn.commit()
-
             conn.close()
 
-
             return redirect(url_for("login"))
-
 
         except sqlite3.IntegrityError:
 
             conn.close()
 
-
             return render_template(
                 "register.html",
                 error="This email is already registered."
             )
-
 
     return render_template("register.html")
 
@@ -183,24 +188,18 @@ def login():
 
     if request.method == "POST":
 
-        email = request.form["email"]
-
-        password = request.form["password"]
-
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
 
         conn = get_db_connection()
-
 
         user = conn.execute("""
             SELECT *
             FROM users
             WHERE email = ?
-        """,
-        (email,)).fetchone()
-
+        """, (email,)).fetchone()
 
         conn.close()
-
 
         if user and check_password_hash(
             user["password"],
@@ -208,41 +207,22 @@ def login():
         ):
 
             session["user_id"] = user["id"]
-
             session["name"] = user["name"]
-
             session["role"] = user["role"]
 
-
-            # CITIZEN
             if user["role"] == "Citizen":
+                return redirect(url_for("citizen_dashboard"))
 
-                return redirect(
-                    url_for("citizen_dashboard")
-                )
-
-
-            # POLICE
             elif user["role"] == "Police":
+                return redirect(url_for("police_dashboard"))
 
-                return redirect(
-                    url_for("police_dashboard")
-                )
-
-
-            # ADMIN
             elif user["role"] == "Admin":
-
-                return redirect(
-                    url_for("admin_dashboard")
-                )
-
+                return redirect(url_for("admin_dashboard"))
 
         return render_template(
             "login.html",
             error="Invalid email or password."
         )
-
 
     return render_template("login.html")
 
@@ -255,14 +235,10 @@ def login():
 def citizen_dashboard():
 
     if "user_id" not in session:
-
         return redirect(url_for("login"))
 
-
     if session["role"] != "Citizen":
-
         return "Access Denied"
-
 
     return render_template(
         "citizen_dashboard.html",
@@ -271,46 +247,60 @@ def citizen_dashboard():
 
 
 # ============================================================
-# REPORT CRIME
+# SUBMIT COMPLAINT / REPORT INCIDENT
 # ============================================================
 
 @app.route("/report_crime", methods=["GET", "POST"])
 def report_crime():
 
-    # Check login
     if "user_id" not in session:
-
         return redirect(url_for("login"))
 
-
-    # Check citizen
     if session["role"] != "Citizen":
-
         return "Access Denied"
-
 
     if request.method == "POST":
 
-        crime_type = request.form["crime_type"]
+        crime_type = request.form.get("crime_type", "").strip()
+        incident_date = request.form.get("incident_date", "").strip()
+        location = request.form.get("location", "").strip()
+        description = request.form.get("description", "").strip()
 
-        incident_date = request.form["incident_date"]
+        if not crime_type:
+            return render_template(
+                "report_crime.html",
+                error="Please select a crime type."
+            )
 
-        location = request.form["location"]
+        if not incident_date:
+            return render_template(
+                "report_crime.html",
+                error="Please enter the incident date."
+            )
 
-        description = request.form["description"]
+        if not location:
+            return render_template(
+                "report_crime.html",
+                error="Please enter the location."
+            )
 
+        if not description:
+            return render_template(
+                "report_crime.html",
+                error="Please enter a description."
+            )
 
         created_at = datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
 
-
         conn = get_db_connection()
 
-
-        # Temporary complaint ID
-        temporary_id = "TEMP"
-
+        # Temporary ID must be unique
+        temporary_id = (
+            "TEMP-" +
+            datetime.now().strftime("%Y%m%d%H%M%S%f")
+        )
 
         cursor = conn.execute("""
             INSERT INTO complaints
@@ -322,12 +312,11 @@ def report_crime():
                 location,
                 description,
                 status,
-                created_at
+                created_at,
+                fir_registered
             )
-
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
             temporary_id,
             session["user_id"],
             crime_type,
@@ -335,40 +324,34 @@ def report_crime():
             location,
             description,
             "Submitted",
-            created_at
+            created_at,
+            0
         ))
-
 
         complaint_database_id = cursor.lastrowid
 
+        # Generate proper complaint ID
+        complaint_id = (
+            "CR" +
+            str(complaint_database_id).zfill(4)
+        )
 
-        # Generate complaint ID
-        complaint_id = "CR" + str(
-            complaint_database_id
-        ).zfill(4)
-
-
-        # Update complaint ID
         conn.execute("""
             UPDATE complaints
-
             SET complaint_id = ?
-
             WHERE id = ?
-        """,
-        (
+        """, (
             complaint_id,
             complaint_database_id
         ))
-
 
         # Create notification
         message = (
             "Your complaint "
             + complaint_id
-            + " has been submitted successfully."
+            + " has been submitted successfully "
+              "and is pending police review."
         )
-
 
         conn.execute("""
             INSERT INTO notifications
@@ -377,30 +360,17 @@ def report_crime():
                 message,
                 created_at
             )
-
             VALUES (?, ?, ?)
-        """,
-        (
+        """, (
             session["user_id"],
             message,
             created_at
         ))
 
-
         conn.commit()
-
         conn.close()
 
-
-        return render_template(
-            "report_crime.html",
-            success=(
-                "Complaint submitted successfully! "
-                "Your Complaint ID is "
-                + complaint_id
-            )
-        )
-
+        return redirect(url_for("notifications"))
 
     return render_template("report_crime.html")
 
@@ -413,34 +383,23 @@ def report_crime():
 def my_complaints():
 
     if "user_id" not in session:
-
         return redirect(url_for("login"))
 
-
     if session["role"] != "Citizen":
-
         return "Access Denied"
-
 
     conn = get_db_connection()
 
-
     complaints = conn.execute("""
         SELECT *
-
         FROM complaints
-
         WHERE citizen_id = ?
-
         ORDER BY id DESC
-    """,
-    (
+    """, (
         session["user_id"],
     )).fetchall()
 
-
     conn.close()
-
 
     return render_template(
         "my_complaints.html",
@@ -456,55 +415,37 @@ def my_complaints():
 def track_complaint():
 
     if "user_id" not in session:
-
         return redirect(url_for("login"))
 
-
     if session["role"] != "Citizen":
-
         return "Access Denied"
 
-
     complaint = None
-
     error = None
-
 
     if request.method == "POST":
 
-        complaint_id = request.form[
-            "complaint_id"
-        ].strip()
-
+        complaint_id = request.form.get(
+            "complaint_id",
+            ""
+        ).strip()
 
         conn = get_db_connection()
 
-
         complaint = conn.execute("""
             SELECT *
-
             FROM complaints
-
             WHERE complaint_id = ?
-
             AND citizen_id = ?
-        """,
-        (
+        """, (
             complaint_id,
             session["user_id"]
         )).fetchone()
 
-
         conn.close()
 
-
         if complaint is None:
-
-            error = (
-                "Complaint not found. "
-                "Please check your Complaint ID."
-            )
-
+            error = "Complaint not found."
 
     return render_template(
         "track_complaint.html",
@@ -521,54 +462,45 @@ def track_complaint():
 def notifications():
 
     if "user_id" not in session:
-
         return redirect(url_for("login"))
-
-
-    if session["role"] != "Citizen":
-
-        return "Access Denied"
-
 
     conn = get_db_connection()
 
-
-    notifications = conn.execute("""
+    notifications_data = conn.execute("""
         SELECT *
-
         FROM notifications
-
         WHERE user_id = ?
-
         ORDER BY id DESC
-    """,
-    (
+    """, (
         session["user_id"],
     )).fetchall()
 
-
-    # Mark notifications as read
-    conn.execute("""
-        UPDATE notifications
-
-        SET is_read = 1
-
-        WHERE user_id = ?
-    """,
-    (
-        session["user_id"],
-    ))
-
-
-    conn.commit()
-
     conn.close()
-
 
     return render_template(
         "notifications.html",
-        notifications=notifications
+        notifications=notifications_data
     )
+
+
+# ============================================================
+# POLICE DASHBOARD
+# ============================================================
+
+@app.route("/police_dashboard")
+def police_dashboard():
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    if session["role"] != "Police":
+        return "Access Denied"
+
+    return render_template(
+        "police_dashboard.html",
+        name=session["name"]
+    )
+
 
 # ============================================================
 # POLICE - VIEW COMPLAINTS
@@ -588,7 +520,8 @@ def police_complaints():
     complaints = conn.execute("""
         SELECT
             complaints.*,
-            users.name AS citizen_name
+            users.name AS citizen_name,
+            users.email AS citizen_email
         FROM complaints
         JOIN users
         ON complaints.citizen_id = users.id
@@ -625,7 +558,9 @@ def update_complaint(complaint_id):
         SELECT *
         FROM complaints
         WHERE complaint_id = ?
-    """, (complaint_id,)).fetchone()
+    """, (
+        complaint_id,
+    )).fetchone()
 
     if complaint is None:
         conn.close()
@@ -633,31 +568,95 @@ def update_complaint(complaint_id):
 
     if request.method == "POST":
 
-        new_status = request.form["status"]
+        new_status = request.form.get(
+            "status",
+            "Submitted"
+        )
+
+        police_remark = request.form.get(
+            "police_remark",
+            ""
+        ).strip()
+
+        reviewed_at = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        fir_registered = complaint["fir_registered"]
+        fir_number = complaint["fir_number"]
+
+        # ----------------------------------------------------
+        # REGISTER FIR
+        # ----------------------------------------------------
+
+        if new_status == "FIR Registered":
+
+            fir_registered = 1
+
+            if not fir_number:
+
+                fir_number = (
+                    "FIR" +
+                    str(complaint["id"]).zfill(4)
+                )
+
+        # ----------------------------------------------------
+        # OTHER STATUS
+        # ----------------------------------------------------
+
+        elif new_status in [
+            "No FIR / Closed",
+            "Referred"
+        ]:
+
+            fir_registered = 0
+            fir_number = None
+
+        # ----------------------------------------------------
+        # UPDATE COMPLAINT
+        # ----------------------------------------------------
 
         conn.execute("""
             UPDATE complaints
-
-            SET status = ?
-
+            SET
+                status = ?,
+                fir_registered = ?,
+                fir_number = ?,
+                police_remark = ?,
+                reviewed_at = ?
             WHERE complaint_id = ?
         """, (
             new_status,
+            fir_registered,
+            fir_number,
+            police_remark,
+            reviewed_at,
             complaint_id
         ))
 
-        # Create notification for the citizen
+        # ----------------------------------------------------
+        # NOTIFICATION
+        # ----------------------------------------------------
 
-        message = (
-            "Your complaint "
-            + complaint_id
-            + " status has been updated to: "
-            + new_status
-        )
+        if fir_registered == 1:
 
-        created_at = datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+            message = (
+                "Your complaint "
+                + complaint_id
+                + " has been updated. "
+                "FIR No.: "
+                + str(fir_number)
+                + "."
+            )
+
+        else:
+
+            message = (
+                "Your complaint "
+                + complaint_id
+                + " status has been updated to: "
+                + new_status
+            )
 
         conn.execute("""
             INSERT INTO notifications
@@ -666,16 +665,14 @@ def update_complaint(complaint_id):
                 message,
                 created_at
             )
-
             VALUES (?, ?, ?)
         """, (
             complaint["citizen_id"],
             message,
-            created_at
+            reviewed_at
         ))
 
         conn.commit()
-
         conn.close()
 
         return redirect(
@@ -691,26 +688,23 @@ def update_complaint(complaint_id):
 
 
 # ============================================================
-# POLICE DASHBOARD
+# ADMIN DASHBOARD
 # ============================================================
 
-@app.route("/police_dashboard")
-def police_dashboard():
+@app.route("/admin_dashboard")
+def admin_dashboard():
 
     if "user_id" not in session:
-
         return redirect(url_for("login"))
 
-
-    if session["role"] != "Police":
-
+    if session["role"] != "Admin":
         return "Access Denied"
 
-
     return render_template(
-        "police_dashboard.html",
+        "admin_dashboard.html",
         name=session["name"]
     )
+
 
 # ============================================================
 # ADMIN - VIEW USERS
@@ -728,7 +722,11 @@ def admin_users():
     conn = get_db_connection()
 
     users = conn.execute("""
-        SELECT id, name, email, role
+        SELECT
+            id,
+            name,
+            email,
+            role
         FROM users
         ORDER BY id DESC
     """).fetchall()
@@ -761,12 +759,9 @@ def admin_complaints():
             complaints.*,
             users.name AS citizen_name,
             users.email AS citizen_email
-
         FROM complaints
-
         JOIN users
         ON complaints.citizen_id = users.id
-
         ORDER BY complaints.id DESC
     """).fetchall()
 
@@ -819,7 +814,13 @@ def admin_analytics():
     closed = conn.execute("""
         SELECT COUNT(*)
         FROM complaints
-        WHERE status = 'Closed'
+        WHERE status IN ('Closed', 'No FIR / Closed')
+    """).fetchone()[0]
+
+    fir_registered = conn.execute("""
+        SELECT COUNT(*)
+        FROM complaints
+        WHERE fir_registered = 1
     """).fetchone()[0]
 
     conn.close()
@@ -830,29 +831,8 @@ def admin_analytics():
         submitted=submitted,
         investigation=investigation,
         resolved=resolved,
-        closed=closed
-    )
-
-# ============================================================
-# ADMIN DASHBOARD
-# ============================================================
-
-@app.route("/admin_dashboard")
-def admin_dashboard():
-
-    if "user_id" not in session:
-
-        return redirect(url_for("login"))
-
-
-    if session["role"] != "Admin":
-
-        return "Access Denied"
-
-
-    return render_template(
-        "admin_dashboard.html",
-        name=session["name"]
+        closed=closed,
+        fir_registered=fir_registered
     )
 
 
@@ -869,7 +849,7 @@ def logout():
 
 
 # ============================================================
-# RUN APPLICATION
+# START APPLICATION
 # ============================================================
 
 if __name__ == "__main__":
