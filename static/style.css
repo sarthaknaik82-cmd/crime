@@ -12,7 +12,7 @@ body {
 
     font-family: Arial, sans-serif;
 
-    background-image: url("/static/crime.jpeg");
+   background-image: url("/static/crime.jpg");
 
     background-size: cover;
 
@@ -32,42 +32,33 @@ body {
 
 .home-container {
     text-align: center;
-
-    padding-top: 150px;
+    padding-top: 40px;
 }
 
 .home-container h1 {
-    font-size: 42px;
-
-    color: #173f7a;
+    color: white;
+    font-size: 48px;
+    margin-bottom: 25px;
 }
 
 .home-container p {
+    color: white;
+    font-size: 20px;
+    margin: 12px 0;
+}
+
+.home-container .button {
+    display: inline-block;
+    background-color: #173f7a;
+    color: white;
+    padding: 14px 35px;
+    margin: 25px 10px;
+    text-decoration: none;
+    border-radius: 6px;
     font-size: 18px;
 }
 
-.home-buttons {
-    margin-top: 30px;
-}
-
-
-.button {
-    display: inline-block;
-
-    padding: 13px 30px;
-
-    margin: 10px;
-
-    background-color: #173f7a;
-
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 6px;
-}
-
-.button:hover {
+.home-container .button:hover {
     background-color: #0d2d59;
 }
 
