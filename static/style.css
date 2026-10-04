@@ -578,3 +578,16 @@ header {
 .dashboard-page h1 {
     color: white;
 }
+
+/* ADMIN ANALYTICS */
+
+.dashboard-page h1 {
+    color: white;
+}
+
+.dashboard-page .dashboard-card h1 {
+    color: #173f7a;
+    font-size: 40px;
+    text-align: center;
+    margin-top: 20px;
+}

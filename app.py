@@ -215,6 +215,7 @@ def login():
             session["user_id"] = user["id"]
             session["name"] = user["name"]
             session["role"] = user["role"]
+            session["email"] = user["email"]
 
             if user["role"] == "Citizen":
                 return redirect(url_for("citizen_dashboard"))
@@ -805,6 +806,26 @@ def update_complaint(complaint_id):
         complaint=complaint
     )
 
+# ============================================================
+# SINGLE ADMIN SETTINGS
+# ============================================================
+
+ADMIN_EMAIL = "sarthaknaik8222@gmail.com"
+
+
+def check_admin():
+
+    if "user_id" not in session:
+        return False
+
+    # Only the fixed admin email gets Admin access
+    if session.get("email") != ADMIN_EMAIL:
+        return False
+
+    if session.get("role") != "Admin":
+        return False
+
+    return True
 
 # ============================================================
 # ADMIN DASHBOARD
@@ -816,7 +837,7 @@ def admin_dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    if session["role"] != "Admin":
+    if not check_admin():
         return "Access Denied"
 
     return render_template(
@@ -835,7 +856,7 @@ def admin_users():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    if session["role"] != "Admin":
+    if not check_admin():
         return "Access Denied"
 
     conn = get_db_connection()
@@ -868,7 +889,7 @@ def admin_complaints():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    if session["role"] != "Admin":
+    if not check_admin():
         return "Access Denied"
 
     conn = get_db_connection()
@@ -902,7 +923,7 @@ def admin_analytics():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    if session["role"] != "Admin":
+    if not check_admin():
         return "Access Denied"
 
     conn = get_db_connection()
