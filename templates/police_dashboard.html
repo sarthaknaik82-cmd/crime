@@ -38,6 +38,8 @@
     <div class="dashboard-container">
 
 
+        <!-- NEW COMPLAINTS -->
+
         <div class="dashboard-card">
 
             <h2>New Complaints</h2>
@@ -56,15 +58,17 @@
         </div>
 
 
+        <!-- ASSIGNED CASES -->
+
         <div class="dashboard-card">
 
             <h2>Assigned Cases</h2>
 
             <p>
-                View and manage assigned cases.
+                View and manage cases picked by you.
             </p>
 
-            <a href="{{ url_for('police_complaints') }}"
+            <a href="{{ url_for('assigned_cases') }}"
                class="dashboard-button">
 
                 View Cases
@@ -74,15 +78,17 @@
         </div>
 
 
+        <!-- CASE INVESTIGATION -->
+
         <div class="dashboard-card">
 
             <h2>Case Investigation</h2>
 
             <p>
-                Update the status of complaints.
+                Update the status of assigned complaints.
             </p>
 
-            <a href="{{ url_for('police_complaints') }}"
+            <a href="{{ url_for('case_investigation') }}"
                class="dashboard-button">
 
                 Investigation

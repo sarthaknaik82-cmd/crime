@@ -2,12 +2,10 @@
 <html>
 
 <head>
-
     <title>Update Complaint</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
-
 </head>
 
 <body>
@@ -39,11 +37,11 @@
 
         <select name="status" required>
 
-            <option value="Submitted"
-                {% if complaint["status"] == "Submitted" %}
+            <option value="Assigned"
+                {% if complaint["status"] == "Assigned" %}
                 selected
                 {% endif %}>
-                Submitted
+                Assigned
             </option>
 
             <option value="Under Investigation"
@@ -51,6 +49,13 @@
                 selected
                 {% endif %}>
                 Under Investigation
+            </option>
+
+            <option value="FIR Registered"
+                {% if complaint["status"] == "FIR Registered" %}
+                selected
+                {% endif %}>
+                FIR Registered
             </option>
 
             <option value="Resolved"
@@ -67,7 +72,31 @@
                 Closed
             </option>
 
+            <option value="No FIR / Closed"
+                {% if complaint["status"] == "No FIR / Closed" %}
+                selected
+                {% endif %}>
+                No FIR / Closed
+            </option>
+
+            <option value="Referred"
+                {% if complaint["status"] == "Referred" %}
+                selected
+                {% endif %}>
+                Referred
+            </option>
+
         </select>
+
+        <br><br>
+
+        <label>Police Remark</label>
+
+        <textarea name="police_remark"
+                  rows="5"
+                  placeholder="Enter investigation/update remark...">{{ complaint["police_remark"] or "" }}</textarea>
+
+        <br><br>
 
         <button type="submit">
             Update Status
@@ -77,12 +106,11 @@
 
     <br>
 
-    <a href="{{ url_for('police_complaints') }}">
-        ← Back to Complaints
+    <a href="{{ url_for('assigned_cases') }}">
+        ← Back to Assigned Cases
     </a>
 
 </div>
 
 </body>
-
 </html>

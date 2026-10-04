@@ -568,3 +568,13 @@ header {
 
     border-left: 5px solid #1f4e8c;
 }
+
+/* Citizen Dashboard Welcome Message */
+
+.dashboard-page h3 {
+    color: white;
+}
+
+.dashboard-page h1 {
+    color: white;
+}

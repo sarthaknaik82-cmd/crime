@@ -78,6 +78,7 @@ def create_database():
             ALTER TABLE complaints
             ADD COLUMN fir_registered INTEGER DEFAULT 0
         """)
+    
 
     if "fir_number" not in existing_columns:
         conn.execute("""
@@ -96,12 +97,11 @@ def create_database():
             ALTER TABLE complaints
             ADD COLUMN reviewed_at TEXT
         """)
-
     if "assigned_police_id" not in existing_columns:
-        conn.execute("""
-            ALTER TABLE complaints
-            ADD COLUMN assigned_police_id INTEGER
-        """)
+            conn.execute("""
+                ALTER TABLE complaints
+                ADD COLUMN assigned_police_id INTEGER
+            """)
 
     # --------------------------------------------------------
     # NOTIFICATIONS TABLE
@@ -509,7 +509,7 @@ def police_dashboard():
 
 
 # ============================================================
-# POLICE - NEW COMPLAINTS
+# POLICE - VIEW COMPLAINTS
 # ============================================================
 
 @app.route("/police_complaints")
@@ -523,16 +523,18 @@ def police_complaints():
 
     conn = get_db_connection()
 
-    # Only new/unpicked complaints appear here.
+    # Show only new/submitted complaints.
+    # Once police changes the status, the complaint will no longer
+    # appear in the New Complaints section.
     complaints = conn.execute("""
         SELECT
             complaints.*,
             users.name AS citizen_name,
             users.email AS citizen_email
         FROM complaints
-        JOIN users ON complaints.citizen_id = users.id
+        JOIN users
+        ON complaints.citizen_id = users.id
         WHERE complaints.status = 'Submitted'
-          AND complaints.assigned_police_id IS NULL
         ORDER BY complaints.id DESC
     """).fetchall()
 
@@ -545,8 +547,156 @@ def police_complaints():
 
 
 # ============================================================
-# POLICE - PICK / ASSIGN A NEW COMPLAINT
+# POLICE - UPDATE COMPLAINT
 # ============================================================
+
+@app.route(
+ "/update_complaint/<complaint_id>",
+    methods=["GET", "POST"]
+)
+def update_complaint(complaint_id):
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    if session["role"] != "Police":
+        return "Access Denied"
+
+    conn = get_db_connection()
+
+    complaint = conn.execute("""
+        SELECT *
+        FROM complaints
+        WHERE complaint_id = ?
+    """, (
+        complaint_id,
+    )).fetchone()
+
+    if complaint is None:
+        conn.close()
+        return "Complaint not found"
+
+    if request.method == "POST":
+
+        new_status = request.form.get(
+            "status",
+            "Submitted"
+        )
+
+        police_remark = request.form.get(
+            "police_remark",
+            ""
+        ).strip()
+
+        reviewed_at = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        fir_registered = complaint["fir_registered"]
+        fir_number = complaint["fir_number"]
+
+        # ----------------------------------------------------
+        # REGISTER FIR
+        # ----------------------------------------------------
+
+        if new_status == "FIR Registered":
+
+            fir_registered = 1
+
+            if not fir_number:
+
+                fir_number = (
+                    "FIR" +
+                    str(complaint["id"]).zfill(4)
+                )
+
+        # ----------------------------------------------------
+        # OTHER STATUS
+        # ----------------------------------------------------
+
+        elif new_status in [
+            "No FIR / Closed",
+            "Referred"
+        ]:
+
+            fir_registered = 0
+            fir_number = None
+
+        # ----------------------------------------------------
+        # UPDATE COMPLAINT
+        # ----------------------------------------------------
+
+        conn.execute("""
+            UPDATE complaints
+            SET
+                status = ?,
+                fir_registered = ?,
+                fir_number = ?,
+                police_remark = ?,
+                reviewed_at = ?,
+                assigned_police_id = ?
+            WHERE complaint_id = ?
+        """, (
+            new_status,
+            fir_registered,
+            fir_number,
+            police_remark,
+            reviewed_at,
+            session["user_id"],
+            complaint_id
+        ))
+
+        # ----------------------------------------------------
+        # NOTIFICATION
+        # ----------------------------------------------------
+
+        if fir_registered == 1:
+
+            message = (
+                "Your complaint "
+                + complaint_id
+                + " has been updated. "
+                "FIR No.: "
+                + str(fir_number)
+                + "."
+            )
+
+        else:
+
+            message = (
+                "Your complaint "
+                + complaint_id
+                + " status has been updated to: "
+                + new_status
+            )
+
+        conn.execute("""
+            INSERT INTO notifications
+            (
+                user_id,
+                message,
+                created_at
+            )
+            VALUES (?, ?, ?)
+        """, (
+            complaint["citizen_id"],
+            message,
+            reviewed_at
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(
+            url_for("police_complaints")
+        )
+
+    conn.close()
+
+    return render_template(
+        "update_complaint.html",
+        complaint=complaint
+    )
 
 @app.route("/assign_complaint/<complaint_id>", methods=["POST"])
 def assign_complaint(complaint_id):
@@ -569,242 +719,43 @@ def assign_complaint(complaint_id):
         conn.close()
         return "Complaint not found"
 
-    # Prevent two police officers from picking the same case.
-    if complaint["status"] != "Submitted" or complaint["assigned_police_id"] is not None:
+    # Only Submitted complaints can be picked
+    if complaint["status"] != "Submitted":
         conn.close()
-        return "This complaint has already been picked."
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return "This complaint has already been assigned."
 
     conn.execute("""
         UPDATE complaints
         SET
             status = 'Assigned',
-            assigned_police_id = ?,
-            reviewed_at = ?
+            assigned_police_id = ?
         WHERE complaint_id = ?
-          AND status = 'Submitted'
-          AND assigned_police_id IS NULL
     """, (
         session["user_id"],
-        now,
         complaint_id
     ))
 
-    # Notify the citizen that a police officer picked the case.
+    # Notify citizen
+    message = (
+        "Your complaint "
+        + complaint_id
+        + " has been assigned to a police officer."
+    )
+
     conn.execute("""
         INSERT INTO notifications
         (user_id, message, created_at)
         VALUES (?, ?, ?)
     """, (
         complaint["citizen_id"],
-        f"Your complaint {complaint_id} has been assigned to a police officer.",
-        now
+        message,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
 
     conn.commit()
     conn.close()
 
     return redirect(url_for("police_complaints"))
-
-
-# ============================================================
-# POLICE - ASSIGNED CASES
-# ============================================================
-
-
-@app.route("/assigned_cases")
-def assigned_cases():
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "Police":
-        return "Access Denied"
-
-    conn = get_db_connection()
-
-    complaints = conn.execute("""
-        SELECT
-            complaints.*,
-            users.name AS citizen_name,
-            users.email AS citizen_email
-        FROM complaints
-        JOIN users
-        ON complaints.citizen_id = users.id
-        WHERE complaints.assigned_police_id = ?
-        ORDER BY complaints.id DESC
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "assigned_cases.html",
-        complaints=complaints
-    )
-
-
-# ============================================================
-# POLICE - CASE INVESTIGATION
-# ============================================================
-
-@app.route("/case_investigation")
-def case_investigation():
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "Police":
-        return "Access Denied"
-
-    conn = get_db_connection()
-
-    complaints = conn.execute("""
-        SELECT
-            complaints.*,
-            users.name AS citizen_name,
-            users.email AS citizen_email
-        FROM complaints
-        JOIN users ON complaints.citizen_id = users.id
-        WHERE complaints.assigned_police_id = ?
-          AND complaints.status IN (
-              'Under Investigation',
-              'FIR Registered',
-              'No FIR / Closed',
-              'Referred',
-              'Resolved',
-              'Closed'
-          )
-        ORDER BY complaints.id DESC
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "case_investigation.html",
-        complaints=complaints
-    )
-
-
-# ============================================================
-# POLICE - UPDATE COMPLAINT
-# ============================================================
-
-@app.route("/update_complaint/<complaint_id>", methods=["GET", "POST"])
-def update_complaint(complaint_id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "Police":
-        return "Access Denied"
-
-    conn = get_db_connection()
-
-    complaint = conn.execute("""
-        SELECT *
-        FROM complaints
-        WHERE complaint_id = ?
-    """, (complaint_id,)).fetchone()
-
-    if complaint is None:
-        conn.close()
-        return "Complaint not found"
-
-    # Only the police officer who picked the case can update it.
-    if complaint["assigned_police_id"] != session["user_id"]:
-        conn.close()
-        return "You are not assigned to this complaint."
-
-    if request.method == "POST":
-
-        new_status = request.form.get("status", "Assigned").strip()
-        police_remark = request.form.get("police_remark", "").strip()
-
-        allowed_statuses = {
-            "Assigned",
-            "Under Investigation",
-            "FIR Registered",
-            "No FIR / Closed",
-            "Referred",
-            "Resolved",
-            "Closed"
-        }
-
-        if new_status not in allowed_statuses:
-            conn.close()
-            return "Invalid status"
-
-        reviewed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        fir_registered = complaint["fir_registered"] or 0
-        fir_number = complaint["fir_number"]
-
-        if new_status == "FIR Registered":
-            fir_registered = 1
-            if not fir_number:
-                fir_number = "FIR" + str(complaint["id"]).zfill(4)
-
-        elif new_status in ["No FIR / Closed", "Referred", "Closed"]:
-            fir_registered = 0
-            fir_number = None
-
-        conn.execute("""
-            UPDATE complaints
-            SET
-                status = ?,
-                fir_registered = ?,
-                fir_number = ?,
-                police_remark = ?,
-                reviewed_at = ?,
-                assigned_police_id = ?
-            WHERE complaint_id = ?
-        """, (
-            new_status,
-            fir_registered,
-            fir_number,
-            police_remark,
-            reviewed_at,
-            session["user_id"],
-            complaint_id
-        ))
-
-        if fir_registered == 1:
-            message = (
-                f"Your complaint {complaint_id} has been updated. "
-                f"FIR No.: {fir_number}."
-            )
-        else:
-            message = (
-                f"Your complaint {complaint_id} status has been updated to: "
-                f"{new_status}"
-            )
-
-        if police_remark:
-            message += f" Remark: {police_remark}"
-
-        conn.execute("""
-            INSERT INTO notifications
-            (user_id, message, created_at)
-            VALUES (?, ?, ?)
-        """, (
-            complaint["citizen_id"],
-            message,
-            reviewed_at
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect(url_for("case_investigation"))
-
-    conn.close()
-
-    return render_template(
-        "update_complaint.html",
-        complaint=complaint
-    )
-
 
 # ============================================================
 # ADMIN DASHBOARD
@@ -891,6 +842,79 @@ def admin_complaints():
         complaints=complaints
     )
 
+@app.route("/assigned_cases")
+def assigned_cases():
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    if session["role"] != "Police":
+        return "Access Denied"
+
+    conn = get_db_connection()
+
+    complaints = conn.execute("""
+        SELECT
+            complaints.*,
+            users.name AS citizen_name,
+            users.email AS citizen_email
+        FROM complaints
+        JOIN users
+        ON complaints.citizen_id = users.id
+        WHERE complaints.status = 'Assigned'
+        AND complaints.assigned_police_id = ?
+        ORDER BY complaints.id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "assigned_cases.html",
+        complaints=complaints
+    )
+
+@app.route("/case_investigation")
+def case_investigation():
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    if session["role"] != "Police":
+        return "Access Denied"
+
+    conn = get_db_connection()
+
+    complaints = conn.execute("""
+        SELECT
+            complaints.*,
+            users.name AS citizen_name,
+            users.email AS citizen_email
+        FROM complaints
+        JOIN users
+        ON complaints.citizen_id = users.id
+        WHERE complaints.assigned_police_id = ?
+        AND complaints.status IN (
+            'Under Investigation',
+            'FIR Registered',
+            'No FIR / Closed',
+            'Referred',
+            'Resolved',
+            'Closed'
+        )
+        ORDER BY complaints.id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "case_investigation.html",
+        complaints=complaints
+    )
+
 
 # ============================================================
 # ADMIN - ANALYTICS
@@ -967,38 +991,6 @@ def logout():
     return redirect(url_for("index"))
 
 
-@app.route("/debug_cases")
-def debug_cases():
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "Police":
-        return "Access Denied"
-
-    conn = get_db_connection()
-
-    complaints = conn.execute("""
-        SELECT
-            id,
-            complaint_id,
-            status,
-            assigned_police_id,
-            citizen_id
-        FROM complaints
-        ORDER BY id DESC
-    """).fetchall()
-
-    conn.close()
-
-    return "<br>".join([
-        f"ID={c['id']} | Complaint={c['complaint_id']} | "
-        f"Status={c['status']} | "
-        f"Assigned Police={c['assigned_police_id']} | "
-        f"Citizen={c['citizen_id']}"
-      
-        for c in complaints
-    ])
 # ============================================================
 # START APPLICATION
 # ============================================================

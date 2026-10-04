@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>New Complaints</title>
+    <title>Assigned Cases</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
@@ -12,7 +12,7 @@
 
 <div class="form-container">
 
-    <h2>New Complaints</h2>
+    <h2>Assigned Cases</h2>
 
     {% if complaints %}
 
@@ -36,18 +36,8 @@
             </p>
 
             <p>
-                <strong>Date:</strong>
-                {{ complaint["incident_date"] }}
-            </p>
-
-            <p>
                 <strong>Location:</strong>
                 {{ complaint["location"] }}
-            </p>
-
-            <p>
-                <strong>Description:</strong>
-                {{ complaint["description"] }}
             </p>
 
             <p>
@@ -55,17 +45,16 @@
                 {{ complaint["status"] }}
             </p>
 
-            <form method="POST"
-                  action="{{ url_for(
-                      'assign_complaint',
-                      complaint_id=complaint['complaint_id']
-                  ) }}">
+            <a href="{{ url_for(
+                'update_complaint',
+                complaint_id=complaint['complaint_id']
+            ) }}">
 
-                <button type="submit">
-                    Pick Case
+                <button type="button">
+                    Update Case
                 </button>
 
-            </form>
+            </a>
 
         </div>
 
@@ -75,7 +64,7 @@
 
     {% else %}
 
-        <p>No new complaints available.</p>
+        <p>No assigned cases.</p>
 
     {% endif %}
 
